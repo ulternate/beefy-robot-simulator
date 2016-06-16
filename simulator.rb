@@ -13,9 +13,7 @@
 # to send valid and illegal commands and confirm this file and the Beefy class and CommandValidator modules perform as required.
 
 # Require the beefy.rb file to be able on initialise Beefy robots with the simulation commands file
-# Require the command_validator.rb file to enable checking if a PLACE command is valid
 require_relative "beefy"
-require_relative "command_validator"
 
 # Get the directory name from the current simulator.rb file so it can run from any location
 dir_name = File.dirname(__FILE__)
@@ -25,85 +23,86 @@ dir_name = File.dirname(__FILE__)
 # a PLACE x,y,face_dir command has been successfully made previously).
 beefy = ""
 
-# Use the IO.foreach method to get each line of the commands.txt file rather than File.open(file).each_line or File.readlines(file)
-# as the latter two methods open the entire file into memory, whereas IO.foreach only accesses each line at a time
-File.foreach(File.join(dir_name, "commands.txt")) do |line|
-  # Split the command via the space to get PLACE, MOVE, LEFT, RIGHT or REPORT when checking the first value in the resulting array
-  split_command = line.split(" ")
+# Check if the commands text file exists in the directory with the simulator, otherwise warn the user.
+if File.file?(File.join(dir_name, "commands.txt"))
+  # Use the IO.foreach method to get each line of the commands.txt file rather than File.open(file).each_line or File.readlines(file)
+  # as the latter two methods open the entire file into memory, whereas IO.foreach only accesses each line at a time
+  File.foreach(File.join(dir_name, "commands.txt")) do |line|
+    # Remove all carriage return characters from the line (i.e. \n \r)
+    command = line.gsub(/\r|\n/,"")
+    # Split the command via the space to get PLACE, MOVE, LEFT, RIGHT or REPORT when checking the first value in the resulting array
+    split_command = command.split(" ")
 
-  # Handle the command from the current line in the file
-  case split_command.first
-  when "PLACE"
-    # Try and get the position string from the PLACE x,y,face_dir command
-    position_string = split_command.last if split_command.length == 2
+    # Handle the command from the current line in the file
+    case split_command.first
+    when "PLACE"
+      # Try and get the position string from the PLACE x,y,face_dir command
+      position_string = split_command.last if split_command.length == 2
 
-    # if we have the position string split via ","
-    if position_string
-      split_position = position_string.split(",")
+      # if we have the position string split via ","
+      if position_string
+        split_position = position_string.split(",")
 
-      # Get the position from the split_position array
-      if split_position.length == 3
-        x_pos = split_position[0].to_i
-        y_pos = split_position[1].to_i
-        face_dir = split_position[2]
+        # Get the position from the split_position array
+        if split_position.length == 3
+          # The Beefy.is_placement_valid? method will check if the x,y coordinates are valid numbers and that the face_dir is
+          # one of NORTH, SOUTH, EAST, WEST. So I am not checking their type here
+          x_pos = split_position[0]
+          y_pos = split_position[1]
+          face_dir = split_position[2]
 
-        # Check if the place command is valid using the Beefy::CommandValidator.is_placement_valid? methods and if it is initialise a new Beefy object
-        if CommandValidator.is_placement_valid?(x_pos, y_pos, face_dir)
-          # If our beefy object has already been placed then the beefy variable will be a Beefy object and we need to update it's position, otherwise 
-          # place a new Beefy object with the valid x, y and face_dir
+          # If our beefy object has already been placed then the beefy variable will be a Beefy object and we need to update it's position, otherwise
+          # check for a valid placement and try and place a new Beefy object with the x, y and face_dir provided.
           if beefy.is_a?(Beefy)
-            beefy.x_pos = x_pos
-            beefy.y_pos = y_pos
-            beefy.face_dir = face_dir
+            # The Beefy.place method calls the Beefy.is_placement_valid? method to check the validity of the potential placement (checking input type and
+            # face direction for approved values)
+            beefy.place(x_pos, y_pos, face_dir)
           else
-            beefy = Beefy.new(x_pos, y_pos, face_dir)
+            if Beefy.is_placement_valid?(x_pos, y_pos, face_dir)
+              # As the placement is valid then x_pos and y_pos are correctly inputted numbers (or string representations i.e. "1") and the face_dir is correct
+              # so initiate a new beefy object with the provided x_pos, y_pos (as integers) and face_dir
+              beefy = Beefy.new(x_pos.to_i, y_pos.to_i, face_dir)
+            end
           end
         else
-          puts "The placement command (#{line}) for the Beefy object was not valid and was ignored."
+          # Couldn't correctly split the position command into x, y and face_dir
+          puts "Unable to get the x_pos, y_pos and face_direction for Beefy from the following command: #{command}"
         end
       else
-        # Couldn't correctly split the position command into x, y and face_dir
-        puts "Unable to get the x_pos, y_pos and face_direction for Beefy from the following command: #{line}"
+        # The initial PLACE command didn't have any x, y and face_dir info as the command was likely just PLACE
+        puts "The entered PLACE command was missing the x,y and face_direction part. Ensure your command is formatted 'PLACE x,y,face_direction', you entered: #{command}"
       end
-    else
-      # The initial PLACE command didn't have any x, y and face_dir info as the command was likely just PLACE
-      puts "The entered PLACE command was missing the x,y and face_direction part. Ensure your command is formatted 'PLACE x,y,face_direction', you entered: #{line}"
-    end
 
-  when "MOVE"
-    # Move the Beefy robot, but only if the beefy variable is a Beefy class object otherwise it hasn't been placed yet so we can ignore this command
-    if beefy.is_a?(Beefy)
-      beefy.move
-    else
-      puts "Ignoring the command '#{line}' as no Beefy robot exists yet on the table."
-    end
+    when "MOVE"
+      # Move the Beefy robot, but only if the beefy variable is a Beefy class object otherwise it hasn't been placed yet so we can ignore this command
+      if beefy.is_a?(Beefy)
+        beefy.move
+      end
 
-  when "LEFT"
-    # Turn the Beefy robot left, but only if the beefy variable is a Beefy class object otherwise it hasn't been placed yet so we can ignore this command
-    if beefy.is_a?(Beefy)
-      beefy.left
-    else
-      puts "Ignoring the command '#{line}' as no Beefy robot exists yet on the table."
-    end
+    when "LEFT"
+      # Turn the Beefy robot left, but only if the beefy variable is a Beefy class object otherwise it hasn't been placed yet so we can ignore this command
+      if beefy.is_a?(Beefy)
+        beefy.left
+      end
 
-  when "RIGHT"
-    # Turn the Beefy robot right, but only if the beefy variable is a Beefy class object otherwise it hasn't been placed yet so we can ignore this command
-    if beefy.is_a?(Beefy)
-      beefy.right
-    else
-      puts "Ignoring the command '#{line}' as no Beefy robot exists yet on the table."
-    end
+    when "RIGHT"
+      # Turn the Beefy robot right, but only if the beefy variable is a Beefy class object otherwise it hasn't been placed yet so we can ignore this command
+      if beefy.is_a?(Beefy)
+        beefy.right
+      end
 
-  when "REPORT"
-    # Report the position of the Beefy robot, but only if the beefy variable is a Beefy class object otherwise it hasn't been placed yet so we can ignore this command
-    if beefy.is_a?(Beefy)
-      puts beefy.to_s
-    else
-      puts "Ignoring the command '#{line}' as no Beefy robot exists yet on the table."
-    end
+    when "REPORT"
+      # Report the position of the Beefy robot, but only if the beefy variable is a Beefy class object otherwise it hasn't been placed yet so we can ignore this command
+      if beefy.is_a?(Beefy)
+        puts beefy.to_s
+      end
 
-  else
-    # Unable to match the command to the required 'PLACE x,y,DIR' , 'MOVE', 'LEFT', 'RIGHT' or 'REPORT' commands.
-    puts "Ignoring the command '#{line}' as it isn't a valid 'PLACE x,y,DIR' , 'MOVE', 'LEFT', 'RIGHT' or 'REPORT' command."
+    else
+      # Unable to match the command to the required 'PLACE x,y,DIR' , 'MOVE', 'LEFT', 'RIGHT' or 'REPORT' commands.
+      puts "Ignoring the command '#{command}' as it isn't a valid 'PLACE x,y,DIR' , 'MOVE', 'LEFT', 'RIGHT' or 'REPORT' command."
+    end
   end
+else
+  puts "No 'commands.txt' file located in the directory.\nPlease use a valid 'commands.txt' file with one line per command or manually \
+        simulate the Beefy robot using a new Beefy class object."
 end
