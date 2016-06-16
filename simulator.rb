@@ -33,7 +33,9 @@ if File.file?(File.join(dir_name, "commands.txt"))
     # Split the command via the space to get PLACE, MOVE, LEFT, RIGHT or REPORT when checking the first value in the resulting array
     split_command = command.split(" ")
 
-    # Handle the command from the current line in the file
+    # Handle the command from the current line in the file (Note, if we want to enable PLACE, place, or any mixed case command we can
+    # add '.upcase' to the end of 'split_command.first' to convert the command string from place to PLACE, as it is now place will 
+    # result in a warning message saying the command was ignored).
     case split_command.first
     when "PLACE"
       # Try and get the position string from the PLACE x,y,face_dir command
@@ -70,7 +72,8 @@ if File.file?(File.join(dir_name, "commands.txt"))
         end
       else
         # The initial PLACE command didn't have any x, y and face_dir info as the command was likely just PLACE
-        puts "The entered PLACE command was missing the x,y and face_direction part. Ensure your command is formatted 'PLACE x,y,face_direction', you entered: #{command}"
+        puts "The entered PLACE command was missing the x,y and face_direction or you included spaces between the x,y,face_direction values." \
+              "Ensure your command is formatted 'PLACE x,y,face_direction', you entered: #{command}"
       end
 
     when "MOVE"
@@ -103,6 +106,6 @@ if File.file?(File.join(dir_name, "commands.txt"))
     end
   end
 else
-  puts "No 'commands.txt' file located in the directory.\nPlease use a valid 'commands.txt' file with one line per command or manually \
-        simulate the Beefy robot using a new Beefy class object."
+  puts "No 'commands.txt' file located in the directory.\nPlease use a valid 'commands.txt' file with one line per command or manually" \
+        " simulate the Beefy robot using a new Beefy class object."
 end

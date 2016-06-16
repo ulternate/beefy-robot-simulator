@@ -1,0 +1,136 @@
+The following files were used to test the Beefy Simulation solution.
+
+Each file needs to be moved up a directory level and renamed to commands.txt to be tested by the simulator by running 'ruby simulator.rb'.
+
+1. test1.txt
+(Test provided by challenge instructions)
+PLACE 0,0,NORTH
+MOVE
+REPORT
+
+Expected output: 0,1,NORTH (PASSED)
+--------------------------------
+2. test2.txt
+(Test provided by challenge instructions)
+PLACE 0,0,NORTH
+LEFT
+REPORT
+
+Expected output: 0,0,WEST (PASSED)
+--------------------------------
+3. test3.txt
+(Test provided by challenge instructions)
+PLACE 1,2,EAST
+MOVE
+MOVE
+LEFT
+MOVE
+REPORT
+
+Expected output: 3,3,NORTH (PASSED)
+--------------------------------
+4. test4.txt
+This test will test for valid PLACE commands
+
+PLACE 1,2,EAST
+PLACE 1,two,EAST
+PLACE 1, 2, EAST
+REPORT
+
+Expected output: 1,2,EAST (PASSED, with the two expected errors mentioned below)
+
+I also expect an error message for the second and third placements with PLACE 1,two,EAST not having valid input type
+and PLACE 1, 2, EAST failing due to the x, y and face direction having spaces after the ','
+--------------------------------
+5. test5.txt
+This test will test that Beefy ignores MOVE, LEFT, RIGHT, REPORT commands until a valid PLACE command is entered
+
+MOVE
+LEFT
+RIGHT
+REPORT
+PLACE 1,2,EAST
+MOVE
+LEFT
+RIGHT
+REPORT
+
+Expected output: 2,2,EAST with no error warnings as the initial commands are ignored. (PASSED)
+--------------------------------
+6. test6.txt
+This test will test that Beefy is correctly ignoring moves and placements that would place it off the table
+
+PLACE 1,2,EAST
+RIGHT
+MOVE
+MOVE
+MOVE
+PLACE 4,4,EAST
+MOVE
+PLACE 5,4,EAST
+PLACE -1,0,EAST
+REPORT
+
+Expected output: 4,4,EAST. (PASSED, with the expected error mentioned below for the PLACE -1,0,EAST command)
+
+I expect the third and forth MOVE commands to be ignored as that would send Beefy to '1,-1,SOUTH' and '5,4,EAST' respectively which
+are off the table
+
+I also expect the third PLACE command to be ignored as it would place Beefy off the table and I expect an
+error for PLACE -1,0,EAST as negative numbers aren't allowed
+--------------------------------
+7. test7.txt
+This test repeats test5.text but is used to test how simulator.rb handles line breaks in the commands.txt file
+MOVE
+LEFT
+RIGHT
+
+REPORT
+PLACE 1,2,EAST
+MOVE
+
+LEFT
+RIGHT
+REPORT
+
+Expected output: 2,2,EAST. (PASSED, with the expected warnings for the two blank lines)
+
+I expect a warning from simulator.rb for the blank lines as they won't match any of the commands
+
+--------------------------------
+8. test8.txt
+This test repeats test3.txt but uses some mixed case commands and face directions
+PLACE 1,2,EAst
+MOVE
+movE
+PLACE 1,2,EAST
+LEFT
+Move
+REPORT
+
+Expected output: 1,2,NORTH (PASSED, with the expected warnings as mentioned below for movE and Move, PLACE 1,2,EAst was ignored)
+
+I also expect a warning from the second and third MOVE commands. The first PLACE command should be ignored as EAst is not a valid face
+direction whilst movE and Move will fail because they aren't in uppercase (Note, movE would normally be ignored by simulator.rb but as it is
+not in all caps it throws the "Ignoring the command as it isn't a valid 'PLACE x,y,DIR' , 'MOVE', 'LEFT', 'RIGHT' or 'REPORT' command." warning)
+
+These case failures can be removed by changing 'case split_command.first' in simulator.rb (line 37) to 'case split_command.first.upcase'
+--------------------------------
+9. test9.txt
+This test repeats text3.txt but adds extra reports, to see if Beefy keeps taking input and not stopping after the first REPORT command
+PLACE 1,2,EAST
+MOVE
+MOVE
+LEFT
+MOVE
+REPORT
+MOVE
+RIGHT
+REPORT
+MOVE
+REPORT
+
+Expected output: 
+1. 3,3,NORTH (PASSED)
+2. 3,4,EAST (PASSED)
+3. 4,4,EAST (PASSED)
